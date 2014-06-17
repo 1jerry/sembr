@@ -21,16 +21,38 @@
   ],
   "dependencies": {
     "requirejs": "2.1.11",
+    "require-css": "0.1.4",
     "require-less": "~0.1.1",
     "requirejs-hbs": "",
     "requirejs-i18n": "2.0.4",
-    "jquery": "2.1.0",
+    "rvc": "0.1.8",
+    
+    "jquery": "2.1.1",
     "backbone": "1.1.2",
     "marionette": "1.6.4",
-    "semantic-ui": "0.15.1",
-    "ractive": "0.3.9"
+    "backbone-validation": "0.9.1",
+    "backbone.memento": "0.4.1",
+
+    "semantic-ui": "0.18.0",
+    "ractive": "0.4.0",
+    "ractive-adaptors-backbone": "0.1.0",
+    
+    "pouchdb": "2.2.3",
+
+    "drop":"0.5.4",
+    "tether": "0.6.5",
+    "tether-tooltip": "0.2.6",
+    "select": "0.5.2",
+    "lodash": "2.4.1",
+    "selectize": "0.10.1",
+    "messenger": "1.4.1",
+    "shepherd": "master",
+    "vex": "2.1.1",
+
+    "moment": "2.7.0",
+    "humanize": "0.0.9"
   },
   "resolutions": {
-    "jquery": "2.1.0"
+    "jquery": "2.1.1"
   }
 }

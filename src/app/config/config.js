@@ -6,8 +6,8 @@ require.config({
         "normalize": "../../bower_components/require-less/normalize",
         "text": "../libs/require/plugins/text",
         "hbs": "../libs/require/plugins/hbs",
-        "rv": "../libs/require/plugins/rv",
-        "css": "../libs/require/plugins/css",
+        "rv": "../libs/require/plugins/rv",//"../../bower_components/rvc/rvc",
+        "css": "../../bower_components/require-css/css",
         "less": "../../bower_components/require-less/less",
         "lessc": "../../bower_components/require-less/lessc",
 
@@ -34,10 +34,10 @@ require.config({
         "sembr.default": 'default/module',
         "sembr.trackr": 'trackr/module',
 
-        "jquery":"../libs/jquery/jquery",
-        "underscore":"../libs/lodash",
-        "backbone":"../libs/backbone/backbone",
-        "marionette":"../libs/backbone/backbone.marionette",
+        "jquery":"../../bower_components/jquery/dist/jquery",
+        "underscore": "../../bower_components/lodash/dist/lodash.underscore",//"../libs/lodash",
+        "backbone":"../../bower_components/backbone/backbone",
+        "marionette":"../../bower_components/marionette/lib/backbone.marionette",
 
         "backbone-undo":"../libs/backbone/backbone.undo",
         "backbone.deep-model":"../libs/backbone/backbone.deep-model",
@@ -46,7 +46,7 @@ require.config({
 
         "hoodie": "/_api/_files/hoodie",
 
-        "ractive": "../../bower_components/ractive/build/Ractive",
+        "ractive": "../../bower_components/ractive/ractive",
         "ractive.backbone": "../libs/ractive/adaptors/Backbone",
         //"ractive.ractive": "../libs/ractive/adaptors/Ractive",
 
@@ -55,7 +55,7 @@ require.config({
         "pickatime": "../libs/pickadate.js-3.4.0/picker.time",
 
 
-        "pouchdb": "../libs/pouchdb",
+        "pouchdb": "../../bower_components/pouchdb/dist/pouchdb-nightly",
 
         "moment": "../libs/moment",
 
