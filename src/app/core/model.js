@@ -3,15 +3,20 @@
  *
  * Defines a model class which can autoload it's dependencies.
  **/
-define(['sembr', "underscore", "backbone", 'pouchdb', 'supermodel', 'backbone-validation'],
-function(sembr, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
+define(['sembr', 'jquery', "underscore", "backbone", 'pouchdb', 'supermodel', 'backbone-validation'],
+function(sembr, $, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
   "use strict";
   var parent = Supermodel.Model.prototype;
   var SembrModel = Supermodel.Model.extend(
 
   // INSTANCE METHODS
   {
-    filters: {},
+    constructor: function(){
+      if( this.filters === undefined ){
+       this.filters = {};
+      }
+      Supermodel.Model.prototype.constructor.apply(this, arguments);
+    },
 
     initialize: function(){
       if(!this.type){
@@ -20,9 +25,11 @@ function(sembr, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
       sembr.log('Initializing %o model (%s/%s) ', this.type, this.id, this.cid, arguments);
       //array of active association names on this model instance
       this._associations = [];
-
-      _( this.filters ).bindAll( this );
-
+      
+      if( this.filters.length ){
+        _( this.filters ).bindAll( this );
+      }
+      
       this._processSerializers();
 
       //keep an array of active association names so we can know the getter names to use.
@@ -36,6 +43,7 @@ function(sembr, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
         //add the association to the associated model instance
         _(this._associations).contains(inverse_property) || this._associations.push(inverse_property)
       }.bind(this));
+      
       this.on('disassociate', function(property, inverse_property, inverse_model){
         //model._associations = _(model._associations).without(inverse_property);
         inverse_model._associations = _(inverse_model._associations).without(property);
@@ -57,7 +65,7 @@ function(sembr, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
 
     set: function(key, val, options){
       var attr, attrs;
-      if (key == null) return this;
+      if (key === null) return this;
 
       // Handle both `"key", value` and `{key: value}` -style arguments.
       if (typeof key === 'object') {
@@ -160,8 +168,8 @@ function(sembr, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
     /**
      * Returns true if all possible associations have been loaded for this model.
      * This does not guarantee those assocations are valid. Eg. a belongs-to association
-     * may reference a model which has not actually been instantiated, and exists only
-     * as an empty model, waiting to be sync'd.
+     * may reference a model which has not actually been fetched, and exists only
+     * as an empty model instance, waiting to be sync'd.
      * @return {Boolean}
      */
     hasAllAssociations: function(){
@@ -178,7 +186,7 @@ function(sembr, _, Backbone, Pouch, Supermodel, BackboneValidation ) {
     	model = this.find({id: id});
     	if(model){
         sembr.log('findOrFetch: Found model instance for id %o', id);
-    		deferred.resolve(model);
+    		deferred.resolve( model );
     	}else{
         sembr.log('findOrFetch: Instantiating new model %o with _id %o', this, id);
 	    	model = new this({id: id})
