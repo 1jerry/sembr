@@ -3,3 +3,4 @@ dist
 test/temp
 .tmp
 bower_components*
+.zedstate
