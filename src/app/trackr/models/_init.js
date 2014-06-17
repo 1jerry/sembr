@@ -2,6 +2,7 @@
 Load all models and then set up the associations
 */
 define([
+  'underscore',
 	'trackr/collections/_init', //make collections available for reference in the associations
 
 	'trackr/models/action', 
@@ -12,6 +13,7 @@ define([
 	'trackr/models/user'
 ],
 function(
+  _,
 	collections, 
 
 	Action,
@@ -28,15 +30,23 @@ function(
 		Plant: Plant,
 		Planting: Planting,
 		PlantingAction: PlantingAction,
-		User: User
-	}
+		User: User,
+		
+		//OMG HACK... Don't got a CamelCase>under_score string function right now
+		action: Action,
+		place: Place,
+		plant: Plant,
+		planting: Planting,
+		planting_action: PlantingAction,
+		user: User
+	};
 
 	//define module association setup functions. 
 	//these are defined like this so we can reset all associations during 
 	//unit testing, and just build the ones we need...	
 	models._init = {
 		all: function(){
-			models._init.plant()
+			models._init.plant();
 			models._init.planting();
 			models._init.planting_action();
 			models._init.place();
@@ -129,7 +139,7 @@ function(
 					collection: collections.Plantings
 				});
 		}
-	}
+	};
 
 	models._reset = {
 		all: function(){
@@ -138,7 +148,7 @@ function(
 					model.reset();
 			});
 		}
-	}
+	};
 
 	models._init.all();
 

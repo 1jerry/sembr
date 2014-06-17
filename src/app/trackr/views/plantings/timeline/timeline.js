@@ -51,7 +51,7 @@ template ){
    * Ractive decorator.
    * Show a tooltip when hovering over actions
    */
-  var actionDecorator = function( node ){
+  var decorateAction = function( node ){
     console.log('Decorating planting action: %o', node._ractive.root.get(node._ractive.keypath));
     var
       model = node._ractive.root.get(node._ractive.keypath),
@@ -73,37 +73,6 @@ template ){
       }
     };
   };
-  
-  /**
-   * Ractive decorator.
-   * Set up the filter field as a selectize widget.
-   */
-  var filterFieldDecorator = function( node ){
-    var 
-      self = this,
-      options = []
-    ;
-    sembr.trackr.plants.each(function( plant ){
-      options.push({
-        label: 'plant',
-        value: 'plant/'+plant.get('id'), 
-        text: plant.get('name') || plant.get('use_name')
-      });
-    })
-    $(node).selectize({
-      create: false,
-      createOnBlur: false,
-      //maxItems: 1,
-      options: options
-    });
-
-    return {
-      teardown: function(){
-        node.selectize.destroy();
-      }
-    }
-  }
-  
   
   /*
   * Ractive Helper. 
@@ -132,8 +101,8 @@ template ){
     },
 
     decorators: {
-      action: actionDecorator,
-      filterBy: filterFieldDecorator
+      action: decorateAction,
+      filterBy: 'decorateFilterField'
     },
 
     events: {
@@ -165,7 +134,7 @@ template ){
       'width': 'widthObserver',
       'height': 'heightObserver',
       'offset': 'offsetObserver',
-      'filterBy': 'filterByObserver',
+      'filters': 'filtersObserver',
       'formattingBreakpoint': 'formattingBreakpointObserver',
       'xScale': 'xScaleObserver',
       'intervals': 'intervalsObserver'
@@ -176,6 +145,10 @@ template ){
 
     _beforeRactive: function( options ){
       this.options = options = _(options).defaults({group_by: 'plant'});
+      
+      var filters = new Backbone.Collection();
+      this.filters = filters;
+      this.data.filters = filters;
       
       this.data.plants = options.collections.plants;
       this.data.places = options.collections.places;
@@ -198,6 +171,8 @@ template ){
       if(!options.collections || _(['plants', 'places', 'plantings']).difference(_(options.collections).keys()).length  ){
         throw 'Plantings, places and plants collections must be passed to plantings/timeline view.';
       }
+      
+      this.plantings = options.collections.plantings;
 
       this.history = new Backbone.UndoManager();
       this.history.register(options.collections);
@@ -237,7 +212,13 @@ template ){
       // update width and height when window resizes
       $(window).resize( _(this.onResize).bind(this) );
 
-      this.on('render show', _(this.render).bind(this) );
+      //this.on('render show', _(this.render).bind(this) );
+      this.on('render', function(){
+        console.log('Marionette:Render')
+      });
+      this.on('show', function(){
+        console.log('Marionette:Show')
+      })
       //DomReady should have fired before the whole application
       //initialized, so I'm not sure why this is necessary, but it is...
       $( _(this.onReady).bind(this) );
@@ -318,12 +299,49 @@ template ){
       });
     },
     
+    /**
+     * Add an object to the filter list. Only plantings which match the filter
+     * list will be displayed.
+     */
+    addFilter: function( type, id ){
+      var self = this;
+      sembr.getModel( type, id )
+        .then( function( model ){
+          self.filters.add( model );
+        })
+        .fail( function( err ){
+          console.error( err );
+        })
+      ;
+    },
+    
+    /**
+     * Remove an object from the filter list. 
+     */
+    removeFilter: function( type, id){
+      var self = this;
+      sembr.getModel( type, id )
+        .then( function( model ){
+          self.filters.remove( model );
+        })
+        .fail( function( err ){
+          console.error( err );
+        })
+      ;
+    },
+    
+    
+    /**
+     * Observers!
+     *
+     */
+    
     intervalsObserver: function( intervals ){
       console.log('intervals changed! %o', intervals);
     },
     
     xScaleObserver: function( xScale ){
-        console.log('xScale changed!');
+        console.log('xScale changed');
     },
 
     /**
@@ -458,10 +476,18 @@ template ){
     
     
     /** 
-     * When the filter field changes, update the planting groups accordingly
+     * When the filters collection, update the plantings accordingly
      */
-    filterByObserver: function(){
-      
+    filtersObserver: function( changedModel, filters ){
+      var 
+        plantings, 
+        groups
+      ;
+      console.log('Observed change in filters', arguments);
+
+      plantings = this.plantings.filterByModels( filters.models );
+      groups = this.groupPlantings( plantings );
+      this.set('groups', groups);
     },
     
 
@@ -677,19 +703,55 @@ template ){
         }
       };
 
-      _(grouped).each(function(models, id){
-        //models = new sembr.trackr.collections.Plantings(models);
-        /*models.comparator = function(model){
-          return model.get('planted_from');
-        }
-        models.sort();*/
+      _(grouped).each(function(models){
         groups.push( { name: getGroupName( models[0] ), models: models });
       }.bind(this));
 
       return groups;
 
     },
+    
 
+    /**
+     * Ractive decorator.
+     * Set up the filter field as a selectize widget.
+     */
+    decorateFilterField: function( node ){
+      var 
+        self = this,
+        options = []
+      ;
+      sembr.trackr.plants.each(function( plant ){
+        options.push({
+          label: 'plant',
+          //combine type and id into value
+          value: 'plant/'+plant.get('id'), 
+          text: plant.get('name') || plant.get('use_name')
+        });
+      })
+      $(node).selectize({
+        create: false,
+        createOnBlur: false,
+        //maxItems: 1,
+        options: options,
+        onItemAdd: function( value ){
+          //split type and id from value
+          value = value.split('/');
+          self.addFilter( value[0], value[1] );
+        },
+        onItemRemove: function( value ){
+          //split type and id from value
+          value = value.split('/');
+          self.removeFilter( value[0], value[1] );
+        }
+      });
+  
+      return {
+        teardown: function(){
+          node.selectize.destroy();
+        }
+      }
+    },
 
     /*
      * Get the index of the date in the days array, if present
@@ -719,7 +781,7 @@ template ){
     },
 
     _formatMonth: function( m, formattingBreakpoint ){
-      console.log("RENDERING MONTH FORMATs", m.format(), this.scale, formattingBreakpoint);
+      //console.log("RENDERING MONTH FORMATs", m.format(), this.scale, formattingBreakpoint);
       if(this.scale > this.formattingBreakpoints.month[0]){
         return m.format('MMMM');
       }
