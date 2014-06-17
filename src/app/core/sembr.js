@@ -41,6 +41,33 @@ function (Backbone, $, Marionette, _, Ractive, Rb, moment,
 	sembr.showError = function(message){
 		console.error(message);
 	}
+	
+	/**
+	 * Grab any model if you know it's type and id.
+	 * 
+	 * Right now this is SUPER hacky. It only works for the trackr module models,
+	 * and worse than that it assumes the trackr module is already loaded.
+	 * 
+	 * Basically it's only used by the trackr module, with the aim to retrofit a 
+	 * more elegant app-wide solution later.
+	 */
+	sembr.getModel = function( type, id ){
+	  var deferred = new $.Deferred();
+	  //hack it up for now, since we're only using the trackr module
+	  if( sembr.trackr.models[type] ){
+	    sembr.trackr.models[type].findOrFetchById( id )
+	      .then( function( model ){
+	        deferred.resolve(model);
+	      })
+	      .fail( function(){
+	        deferred.reject('No model found: ' + type + '/' + id);
+	      })
+	    ;
+	  }else{
+	    deferred.reject('Invalid model type: ' + type);
+	  }
+	  return deferred.promise();
+	}
 
 	sembr.addInitializer(function(options){
 		//check for mobile user agents...
