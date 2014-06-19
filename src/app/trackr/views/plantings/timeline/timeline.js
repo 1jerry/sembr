@@ -96,6 +96,7 @@ template ){
       'offset': 0,
       'zoomScale': 1,
       'showDays': false,
+      'showWeeks': false,
       'formattingBreakpoint':0,
       'plantingHeight': plantingHeight
     },
@@ -134,6 +135,7 @@ template ){
       'width': 'widthObserver',
       'height': 'heightObserver',
       'offset': 'offsetObserver',
+      'group_by': 'groupByObserver',
       'filters': 'filtersObserver',
       'formattingBreakpoint': 'formattingBreakpointObserver',
       'xScale': 'xScaleObserver',
@@ -142,6 +144,18 @@ template ){
 
     min_scale: 0.00001,
     max_scale: 10, 
+    
+    formattingBreakpoints:{
+      month: [0.8, 0],
+      week: [1.2, 0],
+      day: [6,5,4]
+    },
+    
+    currentFormattingBreakpoints: {
+      month: 0, 
+      week: 0,
+      day: 0
+    },
 
     _beforeRactive: function( options ){
       this.options = options = _(options).defaults({group_by: 'plant'});
@@ -153,6 +167,7 @@ template ){
       this.data.plants = options.collections.plants;
       this.data.places = options.collections.places;
       options.collections.plantings.sortBy('planted_from');
+
       this.groups = this.data.groups = this.groupPlantings( options.collections.plantings, groupBy );
       this.data.group_by = options.group_by;
 
@@ -212,16 +227,17 @@ template ){
       // update width and height when window resizes
       $(window).resize( _(this.onResize).bind(this) );
 
-      //this.on('render show', _(this.render).bind(this) );
-      this.on('render', function(){
-        console.log('Marionette:Render')
-      });
       this.on('show', function(){
-        console.log('Marionette:Show')
+        $(window).resize();
       })
-      //DomReady should have fired before the whole application
-      //initialized, so I'm not sure why this is necessary, but it is...
-      $( _(this.onReady).bind(this) );
+      
+      //when ractive is ready
+      this.on('ready', function(){
+        this.startScrollListeners();
+        this.onResize();
+        this.render();
+        $(window).resize();
+      });
 
     },
 
@@ -231,12 +247,6 @@ template ){
     render: function(){
       console.warn("RENDER CALLED!");
       this.draw();
-    },
-
-    onReady: function(){
-      this.startScrollListeners();
-      this.onResize();
-      this.render();
     },
 
     draw: function ( force ) {
@@ -303,8 +313,18 @@ template ){
      * Add an object to the filter list. Only plantings which match the filter
      * list will be displayed.
      */
-    addFilter: function( type, id ){
-      var self = this;
+    addFilter: function( value ){
+      var 
+        self = this,
+        type, id
+      ;
+      value = value.split('/');
+      if( value.length === 2 ){
+        type = value[0];
+        id = value[1];
+      }else{
+        
+      }
       sembr.getModel( type, id )
         .then( function( model ){
           self.filters.add( model );
@@ -318,8 +338,18 @@ template ){
     /**
      * Remove an object from the filter list. 
      */
-    removeFilter: function( type, id){
-      var self = this;
+    removeFilter: function( value ){
+      var 
+        self = this,
+        type, id
+      ;
+      value = value.split('/');
+      if( value.length === 2 ){
+        type = value[0];
+        id = value[1];
+      }else{
+        
+      }
       sembr.getModel( type, id )
         .then( function( model ){
           self.filters.remove( model );
@@ -341,7 +371,7 @@ template ){
     },
     
     xScaleObserver: function( xScale ){
-        console.log('xScale changed');
+        //console.log('xScale changed');
     },
 
     /**
@@ -379,8 +409,14 @@ template ){
     /**
      * formattingBreakpoint is updated whenever
      */
-    formattingBreakpointObserver: function(){
+    formattingBreakpointObserver: function( breakpoint ){
       console.log('Formatting breakpoint changed!');
+      if( breakpoint > this.formattingBreakpoints.week[0]){
+        console.log('SHOWING WEEKS YALL!');
+        this.set('showWeeks', true);
+      }else{
+        this.set('showWeeks', false);
+      }
     },
 
     /**
@@ -404,7 +440,7 @@ template ){
       }
 
       this.scale = scale;
-      console.log('Scale set to ', scale);
+      //console.log('Scale set to ', scale);
 
       //make sure the view has drawn first!
       if(!this.drawn){
@@ -413,7 +449,7 @@ template ){
       }
       //when the left & right draw padding is close to used up,
       //redraw to generate more padding
-      console.log('currentWidth %o : screenWidth %o = %o (baseWidth %o)', this.width, this.screenWidth, this.width/this.screenWidth, this.baseWidth);
+      //console.log('currentWidth %o : screenWidth %o = %o (baseWidth %o)', this.width, this.screenWidth, this.width/this.screenWidth, this.baseWidth);
       /*if( currentWidth / screenWidth < 1.2  ){
         redraw();
       }*/
@@ -476,7 +512,7 @@ template ){
     
     
     /** 
-     * When the filters collection, update the plantings accordingly
+     * When the filters collection is changed, update the plantings accordingly
      */
     filtersObserver: function( changedModel, filters ){
       var 
@@ -487,6 +523,13 @@ template ){
 
       plantings = this.plantings.filterByModels( filters.models );
       groups = this.groupPlantings( plantings );
+    },
+    
+    /**
+     * When the groupBy value changes, update the planting groups accordingly
+     */
+    groupByObserver: function( newValue ){
+      var groups = this.groupPlantings( this.plantings, newValue );
       this.set('groups', groups);
     },
     
@@ -730,19 +773,17 @@ template ){
         });
       })
       $(node).selectize({
-        create: false,
-        createOnBlur: false,
+        create: true,
+        addPrecedence: true,
+        createOnBlur: true,
+        hideSelected: true,
         //maxItems: 1,
         options: options,
         onItemAdd: function( value ){
-          //split type and id from value
-          value = value.split('/');
-          self.addFilter( value[0], value[1] );
+          self.addFilter( value);
         },
         onItemRemove: function( value ){
-          //split type and id from value
-          value = value.split('/');
-          self.removeFilter( value[0], value[1] );
+          self.removeFilter( value );
         }
       });
   
@@ -769,15 +810,6 @@ template ){
 
     _formatDate: function( date, format ){
       return moment(date).calendar();
-    },
-
-    formattingBreakpoints:{
-      month: [0.8, 0],
-      day: [6,5,4]
-    },
-    currentFormattingBreakpoints: {
-      month: 0, 
-      day: 0
     },
 
     _formatMonth: function( m, formattingBreakpoint ){

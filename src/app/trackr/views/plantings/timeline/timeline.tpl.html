@@ -10,7 +10,7 @@
 	</div>
 </div>
 
-Group by: {{group_by}}
+Group by: <select value="{{group_by}}"><option value="plant">Plant</option><option value="place">Place</option></select>
 Scale: <input value="{{zoomScale}}" type="number" step="0.05">
 Offset: <input value="{{offset}}" type="number" step="10">
 Filter by: <input value="{{filterBy}}" type="text" decorator="filterBy">
@@ -19,9 +19,16 @@ Filter by: <input value="{{filterBy}}" type="text" decorator="filterBy">
 <div id="plantings_svg_wrapper">
 <svg>
 
+  <defs>
+    <marker id="triangle" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="4" markerHeight="3" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z"/>
+    </marker>
+  </defs>
+
+
 <g class="planting group axis" transform="translate( 0, 0 )">
 {{#groups:i}}
-	<g class="planting group label" transform="translate(0, {{ verticalGroupPos( i ) }})">
+	<g class="planting group label" transform="translate(0, {{ verticalGroupPos( i ) }})" intro="fade" outro="fade">
 		<text class="{{group_by}} group label {{ plantingGroupIcon( this ) }}">{{ plantingGroupLabel( this ) }}</text>
 	</g>
 {{/groups}}
@@ -46,10 +53,13 @@ Filter by: <input value="{{filterBy}}" type="text" decorator="filterBy">
 			<text x="{{ xScale( intervalLength/2  ) }}" y="20">{{ formatMonth( moment, formattingBreakpoint ) }}</text>
 		</g>
 		{{/ #type }}
-		{{# type === 'week' }}<g class="week time interval" transform="translate({{ xScale( startIndex ) }})" width="{{ xScale( intervalLength ) }}">
-			<line y1="0" y2="{{height}}" />
-		</g>
-		{{/ #type }}
+		{{# showWeeks }}
+  		{{# type === 'week' }}<g class="week time interval" transform="translate({{ xScale( startIndex ) }})" width="{{ xScale( intervalLength ) }}">
+  			<line y1="0" y2="{{height}}" />
+  		</g>
+  		{{/ #type }}
+    {{/ showWeeks }}
+
 		{{# showDays }}{{#[0,1,2,3,4,5,6]: i}}<g class="day time interval" transform="translate({{ xScale( startIndex+i )}}, 40)" width="{{ xScale( 1 ) }}">
 			<line y1="0" y2="{{height}}"  />
 			<text x="{{ xScale( 0.5  ) }}" y="20">{{ formatDay(  moment, i, formattingBreakpoint ) }}</text>
@@ -83,7 +93,14 @@ Filter by: <input value="{{filterBy}}" type="text" decorator="filterBy">
 				</g>
 			{{/actions}}
 			</g>
+			
 		</g>
+		{{/models}}
+		
+		{{#models:i3}}
+	  <g class="planting marker" transform="translate( 0, {{ i2*plantingHeight }})">
+		  <polygon points="0,0 20,10, 0,20"/>
+    </g>
 		{{/models}}
 
 	</g>
