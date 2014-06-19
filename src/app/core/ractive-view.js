@@ -43,7 +43,10 @@ define(['marionette', 'ractive', 'ractive.backbone'], function(Marionette, Racti
   			template: _( this.template ).clone(),
   			data: this.data,
   			adaptors: [ Ractive.adaptors.Backbone ],
-        decorators: this.decorators
+        decorators: this.decorators,
+        complete: function(){
+          this.triggerMethod('ready');
+        }.bind(this)
   		}).defaults( this._ractiveOptions  ));
 
       console.log('Ractive view initialized: %o', this.ractive);
